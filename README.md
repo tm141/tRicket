@@ -61,18 +61,8 @@ Before you begin, ensure you have the following installed:
 
 For detailed API documentation, refer to the API documentation file or explore the routes defined in the code.
 
-## Contributing
-
-If you'd like to contribute to tRicket Backend, please follow our [contribution guidelines](CONTRIBUTING.md).
-
 ## License
 
 This project is licensed under the [MIT License](LICENSE).
 
-## Contact
-
-For inquiries or support, please contact us at [backend-support@tRicket.com](mailto:backend-support@tRicket.com).
-
 ---
-
-This README provides a basic structure for the tRicket Backend using TypeScript, Prisma, Express.js, Node.js, JWT, and MySQL. Customize it according to the specific details of your backend, and provide thorough instructions for setting up, configuring, and running the backend server.
