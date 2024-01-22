@@ -4,7 +4,10 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "migrate-dev": "dotenv -e .env.development -- npx prisma migrate dev",
+    "migrate-test": "dotenv -e .env.test -- npx prisma migrate dev",
+    "migrate-prod": "dotenv -e .env.production -- npx prisma migrate dev"
   },
   "keywords": [],
   "author": "",
@@ -16,5 +19,8 @@
     "prisma": "^5.8.1",
     "ts-node": "^10.9.2",
     "typescript": "^5.3.3"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.8.1"
   }
 }

@@ -10,3 +10,173 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model Users {
+  id    Int     @id @default(autoincrement())
+  fName String
+  lName String?
+  referralCode String
+  address String
+  phone String
+  email String  @unique
+  points Decimal @default(0)
+  pointsExpDate DateTime?
+  displayPicture String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  archived Boolean @default(false)
+  roles UsersRoles[]
+  transactions Transactions[]
+  feedbacks Feedbacks[]
+}
+
+model Roles {
+  id Int @id @default(autoincrement())
+  name String
+  description String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  archived Boolean @default(false)
+  userRoles UsersRoles[]
+}
+
+model UsersRoles {
+  id Int @id @default(autoincrement())
+  User Users @relation(fields: [userId], references: [id])
+  userId Int
+  Role Roles @relation(fields: [roleId], references: [id])
+  roleId Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  archived Boolean @default(false)
+}
+
+model Organizers {
+  id Int @id @default(autoincrement())
+  fName String
+  lName String?
+  address String
+  phone String
+  email String @unique
+  displayPicture String? 
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  archived Boolean @default(false)
+  events Events[]
+}
+
+model Events {
+  id Int @id @default(autoincrement())
+  organizer Organizers @relation(fields: [organizersId], references: [id])
+  organizersId Int
+  name String
+  description String
+  showTime DateTime
+  location String
+  isPaidEvent Boolean
+  bannerPicture String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  archived Boolean @default(false)
+  tickets Tickets[]
+  promosDates PromosDate[]
+  promosReferrals PromosReferral[]
+  feedbacks Feedbacks[]
+}
+
+model Feedbacks {
+  id Int @id @default(autoincrement())
+  user Users @relation(fields: [userId], references: [id])
+  userId Int
+  event Events @relation(fields: [eventId], references: [id])
+  eventId Int
+  message String
+  Rating Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  archived Boolean @default(false)
+}
+
+model Tickets {
+  id Int @id @default(autoincrement())
+  event Events @relation(fields: [eventId], references: [id])
+  eventId Int
+  name String
+  description String
+  price Decimal
+  amount Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  archived Boolean @default(false)
+  transactionsTickets TransactionsTickets[]
+}
+
+model PromosDate {
+  id Int @id @default(autoincrement())
+  event Events @relation(fields: [eventId], references: [id])
+  eventId Int
+  name String
+  description String
+  startDate DateTime
+  endDate DateTime
+  discount Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  archived Boolean @default(false)
+  transactionsTickets TransactionsTickets[]
+}
+
+model PromosReferral {
+  id Int @id @default(autoincrement())
+  event Events @relation(fields: [eventId], references: [id])
+  eventId Int
+  name String
+  description String
+  amount Int
+  discount Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  archived Boolean @default(false)
+  transactionsTickets TransactionsTickets[]
+}
+
+model TransactionsTickets {
+  id Int @id @default(autoincrement())
+  transaction Transactions @relation(fields: [transactionId], references: [id])
+  transactionId Int
+  ticket Tickets @relation(fields: [ticketId], references: [id])
+  ticketId Int
+  amount Int
+  promosDate PromosDate? @relation(fields: [promosDateId], references: [id])
+  promosDateId Int
+  promosReferral PromosReferral? @relation(fields: [promosReferralId], references: [id])
+  promosReferralId Int
+  usePoints Decimal?
+  total Decimal
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  archived Boolean @default(false)
+}
+
+model Transactions {
+  id Int @id @default(autoincrement())
+  user Users @relation(fields: [userId], references: [id])
+  userId Int
+  paymentType PaymentTypes @relation(fields: [paymentTypeId], references: [id])
+  paymentTypeId Int
+  total Decimal
+  status Boolean @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  archived Boolean @default(false)
+  transactionsTickets TransactionsTickets[]
+}
+
+model PaymentTypes {
+  id Int @id @default(autoincrement())
+  name String
+  description String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  archived Boolean @default(false)
+  transactions Transactions[]
+}

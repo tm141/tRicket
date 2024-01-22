@@ -64,5 +64,3 @@ For detailed API documentation, refer to the API documentation file or explore t
 ## License
 
 This project is licensed under the [MIT License](LICENSE).
-
----
