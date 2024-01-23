@@ -44,7 +44,7 @@ Before you begin, ensure you have the following installed:
 
 6. **Start the Server:**
    ```bash
-   npm start
+   npm start 
    ```
 
 ## API Endpoints

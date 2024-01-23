@@ -14,7 +14,8 @@ model Users {
   id    Int     @id @default(autoincrement())
   fName String
   lName String?
-  referralCode String
+  password String
+  referralCode String @unique
   address String
   phone String
   email String  @unique
@@ -22,7 +23,7 @@ model Users {
   pointsExpDate DateTime?
   displayPicture String?
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  updatedAt DateTime? @updatedAt
   archived Boolean @default(false)
   roles UsersRoles[]
   transactions Transactions[]
@@ -34,7 +35,7 @@ model Roles {
   name String
   description String
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  updatedAt DateTime? @updatedAt
   archived Boolean @default(false)
   userRoles UsersRoles[]
 }
@@ -46,20 +47,20 @@ model UsersRoles {
   Role Roles @relation(fields: [roleId], references: [id])
   roleId Int
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  updatedAt DateTime? @updatedAt
   archived Boolean @default(false)
 }
 
 model Organizers {
   id Int @id @default(autoincrement())
-  fName String
-  lName String?
+  name String
+  password String
   address String
   phone String
   email String @unique
   displayPicture String? 
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  updatedAt DateTime? @updatedAt
   archived Boolean @default(false)
   events Events[]
 }
@@ -75,7 +76,7 @@ model Events {
   isPaidEvent Boolean
   bannerPicture String?
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  updatedAt DateTime? @updatedAt
   archived Boolean @default(false)
   tickets Tickets[]
   promosDates PromosDate[]
@@ -92,7 +93,7 @@ model Feedbacks {
   message String
   Rating Int
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  updatedAt DateTime? @updatedAt
   archived Boolean @default(false)
 }
 
@@ -105,7 +106,7 @@ model Tickets {
   price Decimal
   amount Int
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  updatedAt DateTime? @updatedAt
   archived Boolean @default(false)
   transactionsTickets TransactionsTickets[]
 }
@@ -120,7 +121,7 @@ model PromosDate {
   endDate DateTime
   discount Int
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  updatedAt DateTime? @updatedAt
   archived Boolean @default(false)
   transactionsTickets TransactionsTickets[]
 }
@@ -134,7 +135,7 @@ model PromosReferral {
   amount Int
   discount Int
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  updatedAt DateTime? @updatedAt
   archived Boolean @default(false)
   transactionsTickets TransactionsTickets[]
 }
@@ -153,7 +154,7 @@ model TransactionsTickets {
   usePoints Decimal?
   total Decimal
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  updatedAt DateTime? @updatedAt
   archived Boolean @default(false)
 }
 
@@ -166,7 +167,7 @@ model Transactions {
   total Decimal
   status Boolean @default(false)
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  updatedAt DateTime? @updatedAt
   archived Boolean @default(false)
   transactionsTickets TransactionsTickets[]
 }
@@ -176,7 +177,7 @@ model PaymentTypes {
   name String
   description String
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  updatedAt DateTime? @updatedAt
   archived Boolean @default(false)
   transactions Transactions[]
 }

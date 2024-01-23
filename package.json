@@ -7,7 +7,16 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "migrate-dev": "dotenv -e .env.development -- npx prisma migrate dev",
     "migrate-test": "dotenv -e .env.test -- npx prisma migrate dev",
-    "migrate-prod": "dotenv -e .env.production -- npx prisma migrate dev"
+    "migrate-prod": "dotenv -e .env.production -- npx prisma migrate dev",
+    "push-dev": "dotenv -e .env.development -- npx prisma db push --force-reset",
+    "push-test": "dotenv -e .env.test -- npx prisma db push --force-reset",
+    "push-prod": "dotenv -e .env.production -- npx prisma db push --force-reset",
+    "migrate-reset-dev": "dotenv -e .env.development -- npx prisma migrate reset dev",
+    "migrate-reset-test": "dotenv -e .env.test -- npx prisma migrate reset dev",
+    "migrate-reset-prod": "dotenv -e .env.production -- npx prisma migrate reset dev",
+    "generate-dev": "dotenv -e .env.development -- npx prisma generate dev",
+    "generate-test": "dotenv -e .env.test -- npx prisma generate dev",
+    "generate-prod": "dotenv -e .env.production -- npx prisma generate dev"
   },
   "keywords": [],
   "author": "",
@@ -22,5 +31,8 @@
   },
   "dependencies": {
     "@prisma/client": "^5.8.1"
+  },
+  "prisma": {
+    "seed": "./prisma/seed/seed.sh"
   }
 }
