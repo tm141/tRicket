@@ -7,3 +7,4 @@ node_modules
 prisma/seed/dbV1.sql
 prisma/seed/filldbNormalization.txt
 prisma/seed/temp.sql
+dotenv

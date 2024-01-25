@@ -1,176 +1,238 @@
 import express from 'express';
 import { PrismaClient } from '@prisma/client';
-import bcrypt from 'bcrypt';
 import { authenticateToken } from './lib/authenticateJWT';
 
 const userRouter = express.Router();
 const prisma = new PrismaClient();
 
-userRouter.get('/', authenticateToken, async (req, res, next) => {
-    console.log(req.user);
-    if (req.user.roleId === "2") {
-        try {
-            const users = await prisma.users.findMany();
-            res.send(users);
-        } catch (err) {
-            next(err);
-        }
-    } else {
-        res.status(401).send({ error: 'Unauthorized' });
-    }
-});
+/**
+ * GET /events
+ * Retrieves a list of events based on the specified filters.
+ * Requires authentication token.
+ * @name GET /events
+ * @function
+ * @memberof module:UserRouter
+ * @param {string} req.query.name - The name of the event (optional).
+ * @param {string} req.query.startDate - The start date of the event (optional).
+ * @param {string} req.query.endDate - The end date of the event (optional).
+ * @param {string} req.query.location - The location of the event (optional).
+ * @param {number} req.query.page - The page number for pagination (optional, default: 1).
+ * @param {number} req.query.limit - The maximum number of events to retrieve per page (optional, default: 10).
+ * @returns {Array} An array of events that match the specified filters.
+ * @throws {Error} If an error occurs while retrieving the events.
+ */
+userRouter.get('/events', authenticateToken, async (req, res, next) => {
+    const name = req.query.name as string;
+    const startDate = req.query.startDate as string;
+    const endDate = req.query.endDate as string;
+    const location = req.query.location as string;
 
-userRouter.get('/:id', authenticateToken, async (req, res, next) => {
-    if (req.user.roleId === "2") {
-        const userId = Number(req.params.id);
-        try {
-            const user = await prisma.users.findUnique({
-                where: {
-                    id: userId,
-                },
-            });
-            if (!user) {
-                return res.status(404).send({ error: 'User not found' });
-            }
-            res.send(user);
-        } catch (err) {
-            next(err);
-        }
-    } else {
-        res.status(401).send({ error: 'Unauthorized' });
-    }
-});
-
-userRouter.post('/', async (req, res, next) => {
-    const userData = req.body;
-    let tempfName = userData.fName ?? '';
-    let tempEmail = userData.email ?? '';
-    let referralCode = '';
-    if (tempfName && tempEmail) {
-        referralCode = Buffer.from(tempfName + tempEmail).toString('base64');
-    }
-    userData.referralCode = referralCode;
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 10;
     try {
-        const createdUser = await prisma.users.create({
-            data: userData,
-        });
-        const createdUsersRoles = await prisma.usersRoles.create({
-            data: {
-                userId: createdUser.id,
-                roleId: 1,
+        const events = await prisma.events.findMany({
+            where: {
+                archived: false,
+                name: {
+                    contains: name,
+                },
+                location: {
+                    contains: location,
+                },
+                showTime: {
+                    gte: startDate,
+                    lte: endDate,
+                },
             },
+            skip: (page - 1) * limit,
+            take: limit,
         });
-        res.send(createdUser);
+        res.send(events);
     } catch (err) {
         next(err);
     }
 });
 
-userRouter.post('/admin/', async (req, res, next) => {
-    const userData = req.body;
-    let tempfName = userData.fName ?? '';
-    let tempEmail = userData.email ?? '';
-    let referralCode = '';
-    if (tempfName && tempEmail) {
-        referralCode = Buffer.from(tempfName + tempEmail).toString('base64');
-    }
-    userData.referralCode = referralCode;
+/**
+ * GET /events/:id
+ * Retrieves a specific event by its ID.
+ * Requires authentication token.
+ * @name GET /events/:id
+ * @function
+ * @memberof module:UserRouter
+ * @param {number} req.params.id - The ID of the event.
+ * @returns {Object} The event object if found, otherwise returns an error object.
+ * @throws {Error} If an error occurs while retrieving the event.
+ */
+userRouter.get('/events/:id', authenticateToken, async (req, res, next) => {
+    const eventId = Number(req.params.id);
     try {
-        const createdUser = await prisma.users.create({
-            data: userData,
-        });
-        const createdUsersRolesAdmin = await prisma.usersRoles.create({
-            data: {
-                userId: createdUser.id,
-                roleId: 2,
+        const event = await prisma.events.findUnique({
+            where: {
+                id: eventId,
             },
         });
-        res.send(createdUser);
+        if (!event || event.archived) {
+            return res.status(404).send({ error: 'Event not found' });
+        }
+        res.send(event);
     } catch (err) {
         next(err);
     }
 });
 
-userRouter.post('/createTest', async (req, res, next) => {
-    const userData = req.body;
-    let tempfName = userData.fName ?? '';
-    let tempEmail = userData.email ?? '';
-    let referralCode = '';
-    if (tempfName && tempEmail) {
-        referralCode = Buffer.from(tempfName + tempEmail).toString('base64');
-    }
-    userData.referralCode = referralCode;
-
-    // Hash the password
-    const saltRounds = 10;
-    const hashedPassword = await bcrypt.hash(userData.password, saltRounds);
-    userData.password = hashedPassword;
-
+/**
+ * POST /createTransactions
+ * Creates a new transaction and associated transaction tickets.
+ * Requires authentication token.
+ * @name POST /createTransactions
+ * @function
+ * @memberof module:UserRouter
+ * @param {Object} req.body.transaction - The transaction details.
+ * @param {Array} req.body.transactionTickets - An array of transaction ticket details.
+ * @returns {Object} The created transaction object if successful, otherwise returns an error object.
+ * @throws {Error} If an error occurs while creating the transaction.
+ */
+userRouter.post('/createTransactions', authenticateToken, async (req, res, next) => {//req body should contain transaction detail and array of transactionTickets detail
+    const transactionData = req.body.transaction;
+    const transactionTicketsData = req.body.transactionTickets;
+    let createdTransaction = null;
     try {
-        const createdUser = await prisma.users.create({
-            data: userData,
+        createdTransaction = await prisma.transactions.create({
+            data: transactionData,
         });
-        const createdUsersRoles = await prisma.usersRoles.create({
-            data: {
-                userId: createdUser.id,
-                roleId: 1,
+    } catch (err) {
+        next(err);
+    }
+
+    if(!createdTransaction) {
+        return res.status(500).send({ error: 'Failed to create transaction' });
+    }
+
+    transactionData.transactionId = createdTransaction.id;
+    transactionTicketsData.forEach(async (transactionTicketData: any) => {
+        try {
+            const createdTransactionTicket = await prisma.transactionsTickets.create({
+                data: transactionTicketData,
+            });
+            res.send(createdTransactionTicket);
+        } catch (err) {
+            next(err);
+        }
+    });
+
+    res.status(201).send(createdTransaction);
+});
+
+/**
+ * GET /transactions
+ * Retrieves a list of transactions for the authenticated user.
+ * Requires authentication token.
+ * @name GET /transactions
+ * @function
+ * @memberof module:UserRouter
+ * @param {string} req.query.startDate - The start date of the transactions (optional).
+ * @param {string} req.query.endDate - The end date of the transactions (optional).
+ * @param {number} req.query.page - The page number for pagination (optional, default: 1).
+ * @param {number} req.query.limit - The maximum number of transactions to retrieve per page (optional, default: 10).
+ * @returns {Array} An array of transactions that match the specified filters.
+ * @throws {Error} If an error occurs while retrieving the transactions.
+ */
+userRouter.get('/transactions', authenticateToken, async (req, res, next) => {
+    const userId = req.user.id;
+    const startDate = req.query.startDate as string;
+    const endDate = req.query.endDate as string;
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 10;
+    try {
+        const transactions = await prisma.transactions.findMany({
+            where: {
+                userId: userId,
+                createdAt: {
+                    gte: startDate,
+                    lte: endDate,
+                },
+                archived: false,
             },
+            skip: (page - 1) * limit,
+            take: limit,
         });
-        res.send(createdUser);
+        res.send(transactions);
     } catch (err) {
         next(err);
     }
 });
 
-userRouter.put('/:id', authenticateToken, async (req, res, next) => {
-    if (req.user.roleId !== "2") {
-        return res.status(401).send({ error: 'Unauthorized' });
-    } else {
-        const userId = Number(req.params.id);
-        const userData = req.body;
-        try {
-            const tempUser = await prisma.users.findUnique({
-                where: {
-                    id: userId,
-                },
-            });
-            let tempReferralCode = '';
-            if (tempUser) {
-                let tempfName = userData.fName ?? tempUser.fName;
-                let tempEmail = userData.email ?? tempUser.email;
-                tempReferralCode = Buffer.from(tempfName + tempEmail).toString('base64');
-            }
-            userData.referralCode = tempReferralCode;
-            const updatedUser = await prisma.users.update({
-                where: {
-                    id: userId,
-                },
-                data: userData,
-            });
-            res.send(updatedUser);
-        } catch (err) {
-            next(err);
+/**
+ * GET /transactions/:id
+ * Retrieves a specific transaction by its ID for the authenticated user.
+ * Requires authentication token.
+ * @name GET /transactions/:id
+ * @function
+ * @memberof module:UserRouter
+ * @param {number} req.params.id - The ID of the transaction.
+ * @returns {Object} The transaction object if found and belongs to the authenticated user, otherwise returns an error object.
+ * @throws {Error} If an error occurs while retrieving the transaction.
+ */
+userRouter.get('/transactions/:id', authenticateToken, async (req, res, next) => {
+    const transactionId = Number(req.params.id);
+    const userId = req.user.id;
+    try {
+        const transaction = await prisma.transactions.findUnique({
+            where: {
+                id: transactionId,
+                archived: false,
+            },
+        });
+        if (!transaction || transaction.archived) {
+            return res.status(404).send({ error: 'Transaction not found' });
         }
+        if (transaction.userId !== userId) {
+            return res.status(401).send({ error: 'Unauthorized' });
+        }
+        res.send(transaction);
+    } catch (err) {
+        next(err);
     }
 });
 
-userRouter.delete('/:id', authenticateToken, async (req, res, next) => {
-    if (req.user.roleId !== "2") {
-        return res.status(401).send({ error: 'Unauthorized' });
-    } else {
-
-        const userId = Number(req.params.id);
-        try {
-            const deletedUser = await prisma.users.delete({
-                where: {
-                    id: userId,
-                },
-            });
-            res.send(deletedUser);
-        } catch (err) {
-            next(err);
+/**
+ * GET /transaction/:id/transactionTickets
+ * Retrieves the transaction and associated transaction tickets by the transaction ID for the authenticated user.
+ * Requires authentication token.
+ * @name GET /transaction/:id/transactionTickets
+ * @function
+ * @memberof module:UserRouter
+ * @param {number} req.params.id - The ID of the transaction.
+ * @returns {Object} The transaction object and an array of transaction tickets if found and belongs to the authenticated user, otherwise returns an error object.
+ * @throws {Error} If an error occurs while retrieving the transaction and transaction tickets.
+ */
+userRouter.get('/transaction/:id/transactionTickets', authenticateToken, async (req, res, next) => {
+    const userId = typeof (req.user.id) == 'number' ? req.user.id : Number(req.user.id);
+    const transactionId = Number(req.params.id);
+    try {
+        const transaction = await prisma.transactions.findUnique({
+            where: {
+                id: transactionId,
+                archived: false,
+            },
+        });
+        if (!transaction || transaction.archived) {
+            return res.status(404).send({ error: 'Transaction not found' });
         }
+        if (transaction.userId !== userId) {
+            return res.status(401).send({ error: 'Unauthorized' });
+        }
+        const transactionTickets = await prisma.transactionsTickets.findMany({
+            where: {
+                transactionId: transactionId,
+                archived: false,
+            },
+        });
+        res.send({ transaction, transactionTickets });
+    } catch (err) {
+        next(err);
     }
 });
 
-export default userRouter
+export default userRouter;

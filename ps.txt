@@ -1,0 +1,5 @@
+note:
+
+-because email is unique and deleting account is just changing the archived from false to true,
+there will be bug of people who deleted their account and want to create new account with the same email they once used.
+it is a long term bug in production, since this is a project for my school I won't be addressing this.

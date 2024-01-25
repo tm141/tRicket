@@ -1,24 +1,44 @@
 import express from 'express';
-import userRouter from './routes/user';
+import adminUserRouter from './routes/adminUser';
+import adminOrganizerRouter from './routes/adminOrganizers';
+import adminTransactionRouter from './routes/adminTransaction';
+import authAdminRouter from './routes/authAdmin';
+import authUserRouter from './routes/authUser';
+import authOrganizerRouter from './routes/authOrganizer';
 import organizerRouter from './routes/organizers';
-import adminAuthRouter from './routes/adminAuth';
-import userAuth from './routes/userAuth';
+import userRouter from './routes/user';
 
 const app = express();
 const port = 3000;
 
-
+/**
+ * GET request handler for the root endpoint.
+ * @param req - Express Request object
+ * @param res - Express Response object
+ */
 app.get('/', (req:express.Request,res:express.Response)=>{
     res.send('Hello World!');
 })
 app.use(express.json());  
 
-app.use('/api/users', userRouter);
-app.use('/api/organizers', organizerRouter);
+app.use('/api/admin/users', adminUserRouter);
+app.use('/api/admin/organizers', adminOrganizerRouter);
+app.use('/api/admin/transactions', adminTransactionRouter);
 
-app.use('/api/admin/auth', adminAuthRouter);
-app.use('/api/user/auth', userAuth);
+app.use('/api/admin/auth', authAdminRouter);
+app.use('/api/user/auth', authUserRouter);
+app.use('/api/organizer/auth', authOrganizerRouter);
 
+app.use('/api/organizer', organizerRouter);
+app.use('/api/user', userRouter);
+
+/**
+ * Error handling middleware.
+ * @param err - Error object
+ * @param req - Express Request object
+ * @param res - Express Response object
+ * @param next - Express NextFunction object
+ */
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
     if (err.name === 'UnauthorizedError') {
         res.status(err.status).send({ error: err.message });

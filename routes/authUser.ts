@@ -6,12 +6,22 @@ import jwt from 'jsonwebtoken';
 const userAuthRouter = express.Router();
 const prisma = new PrismaClient();
 
+/**
+ * Route for user login.
+ * @name POST /login
+ * @function
+ * @async
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware function
+ * @returns {Object} - Response object containing the JWT token
+ */
 userAuthRouter.post('/login', async (req, res, next) => {
-    const {tempEmail, password} = req.body;
+    const {loginEmail, password} = req.body;
     try {
         const user = await prisma.users.findUnique({
             where: {
-                email: tempEmail,
+                email: loginEmail,
             },
         });
         if (!user) {
@@ -29,15 +39,29 @@ userAuthRouter.post('/login', async (req, res, next) => {
     }
 });
 
+/**
+ * Route for user registration.
+ * @name POST /register
+ * @function
+ * @async
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware function
+ * @returns {Object} - Response object containing the created user data
+ */
 userAuthRouter.post('/register', async (req, res, next) => {
     const userData = req.body;
     let tempfName = userData.fName ?? '';
-    let tempEmail = userData.email ?? '';
+    let loginEmail = userData.email ?? '';
     let referralCode = '';
-    if (tempfName && tempEmail) {
-        referralCode = Buffer.from(tempfName + tempEmail).toString('base64');
+    if (tempfName && loginEmail) {
+        referralCode = Buffer.from(tempfName + loginEmail).toString('base64');
     }
     userData.referralCode = referralCode;
+    // Hash the password
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(userData.password, saltRounds);
+    userData.password = hashedPassword;
     try {
         const createdUser = await prisma.users.create({
             data: userData,
@@ -48,6 +72,12 @@ userAuthRouter.post('/register', async (req, res, next) => {
     }
 });
 
+/**
+ * Route for user logout.
+ * @route POST /logout
+ * @returns {object} - The success message for logout.
+ * @throws {object} - Error object if logout fails.
+ */
 userAuthRouter.post('/logout', async (req, res, next) => {
     try {
         // On the client side, remove the token from storage

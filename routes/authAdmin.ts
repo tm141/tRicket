@@ -2,16 +2,24 @@ import { PrismaClient } from "@prisma/client";
 import express from "express";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import { authenticateToken } from "./lib/authenticateJWT";
 
-const adminAuthRouter = express.Router();
+const authAdminRouter = express.Router();
 const prisma = new PrismaClient();
 
-adminAuthRouter.post("/login", async (req, res, next) => {
-    const { tempEmail, password } = req.body;
+/**
+ * Route for admin login.
+ * @route POST /login
+ * @param {string} loginEmail - The email address of the admin user.
+ * @param {string} password - The password of the admin user.
+ * @returns {object} - The JWT token for authentication.
+ */
+authAdminRouter.post("/login", async (req, res, next) => {
+    const { loginEmail, password } = req.body;
     try {
         const user = await prisma.users.findUnique({
             where: {
-                email: tempEmail,
+                email: loginEmail,
             },
             include: {
                 roles: {
@@ -39,13 +47,26 @@ adminAuthRouter.post("/login", async (req, res, next) => {
     }
 });
 
-adminAuthRouter.post("/register", async (req, res, next) => {
+/**
+ * Route for creating a new admin user.
+ * @route POST /create/admin
+ * @param {object} userData - The data of the admin user to be created.
+ * @returns {object} - The created admin user and its role.
+ */
+authAdminRouter.post("/create/admin", authenticateToken, async (req, res, next) => {
+    if (req.user.roleId !== "2") {
+        return res.status(401).send({ error: 'Unauthorized' });
+    }
     const userData = req.body;
     let tempfName = userData.fName ?? "";
-    let tempEmail = userData.email ?? "";
+    let loginEmail = userData.email ?? "";
     let referralCode = "";
-    if (tempfName && tempEmail) {
-        referralCode = Buffer.from(tempfName + tempEmail).toString("base64");
+    // Hash the password
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(userData.password, saltRounds);
+    userData.password = hashedPassword;
+    if (tempfName && loginEmail) {
+        referralCode = Buffer.from(tempfName + loginEmail).toString("base64");
     }
     userData.referralCode = referralCode;
     try {
@@ -64,7 +85,12 @@ adminAuthRouter.post("/register", async (req, res, next) => {
     }
 });
 
-adminAuthRouter.post("/logout", async (req, res, next) => {
+/**
+ * Route for admin logout.
+ * @route POST /logout
+ * @returns {object} - A message indicating successful logout.
+ */
+authAdminRouter.post("/logout", async (req, res, next) => {
     try {
         // On the client side, remove the token from storage
         res.send({ message: "Logout successful" });
@@ -73,4 +99,4 @@ adminAuthRouter.post("/logout", async (req, res, next) => {
     }
 });
 
-export default adminAuthRouter;
+export default authAdminRouter;
