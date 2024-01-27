@@ -44,6 +44,10 @@ userRouter.get('/events', async (req, res, next) => {
                     lte: endDate,
                 },
             },
+            include: {
+                organizer: true,
+                tickets: true,
+            },
             skip: (page - 1) * limit,
             take: limit,
         });
@@ -71,6 +75,10 @@ userRouter.get('/events/:id', async (req, res, next) => {
             where: {
                 id: eventId,
             },
+            include: {
+                organizer: true,
+                tickets: true,
+            }
         });
         if (!event || event.archived) {
             return res.status(404).send({ error: 'Event not found' });
