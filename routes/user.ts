@@ -278,6 +278,7 @@ userRouter.post('/createTransactions', authenticateToken, async (req, res, next)
                                 points: {
                                     increment: 10000,
                                 },
+                                pointsExpDate: dbgenerated("NOW() + interval '3 months'")
                             },
                         });
                     }
