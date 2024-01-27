@@ -21,7 +21,7 @@ const prisma = new PrismaClient();
  * @returns {Array} An array of events that match the specified filters.
  * @throws {Error} If an error occurs while retrieving the events.
  */
-userRouter.get('/events', authenticateToken, async (req, res, next) => {
+userRouter.get('/events', async (req, res, next) => {
     const name = req.query.name as string;
     const startDate = req.query.startDate as string;
     const endDate = req.query.endDate as string;
@@ -64,7 +64,7 @@ userRouter.get('/events', authenticateToken, async (req, res, next) => {
  * @returns {Object} The event object if found, otherwise returns an error object.
  * @throws {Error} If an error occurs while retrieving the event.
  */
-userRouter.get('/events/:id', authenticateToken, async (req, res, next) => {
+userRouter.get('/events/:id', async (req, res, next) => {
     const eventId = Number(req.params.id);
     try {
         const event = await prisma.events.findUnique({

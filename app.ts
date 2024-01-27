@@ -16,10 +16,10 @@ const port = 3000;
  * @param req - Express Request object
  * @param res - Express Response object
  */
-app.get('/', (req:express.Request,res:express.Response)=>{
+app.get('/', (req: express.Request, res: express.Response) => {
     res.send('Hello World!');
 })
-app.use(express.json());  
+app.use(express.json());
 
 app.use('/api/admin/users', adminUserRouter);
 app.use('/api/admin/organizers', adminOrganizerRouter);
@@ -47,6 +47,6 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
     next(err);
 });
 
-app.listen(port, ()=>{
+app.listen(port, () => {
     console.log(`tRicket API listening on port ${port}`)
 })
