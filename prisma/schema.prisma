@@ -151,7 +151,8 @@ model TransactionsTickets {
   promosDateId Int
   promosReferral PromosReferral? @relation(fields: [promosReferralId], references: [id])
   promosReferralId Int
-  usePoints Decimal?
+  referralCode String?
+  usePoints Boolean @default(false)
   total Decimal
   createdAt DateTime @default(now())
   updatedAt DateTime? @updatedAt
@@ -164,7 +165,7 @@ model Transactions {
   userId Int
   paymentType PaymentTypes @relation(fields: [paymentTypeId], references: [id])
   paymentTypeId Int
-  total Decimal
+  total Decimal?
   status Boolean @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime? @updatedAt

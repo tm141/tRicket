@@ -1,6 +1,7 @@
 import express from 'express';
-import { PrismaClient } from '@prisma/client';
+import { Prisma, PrismaClient } from '@prisma/client';
 import { authenticateToken } from './lib/authenticateJWT';
+import { parse } from 'path';
 
 const userRouter = express.Router();
 const prisma = new PrismaClient();
@@ -104,32 +105,218 @@ userRouter.get('/events/:id', async (req, res, next) => {
 userRouter.post('/createTransactions', authenticateToken, async (req, res, next) => {//req body should contain transaction detail and array of transactionTickets detail
     const transactionData = req.body.transaction;
     const transactionTicketsData = req.body.transactionTickets;
-    let createdTransaction = null;
-    try {
-        createdTransaction = await prisma.transactions.create({
-            data: transactionData,
-        });
-    } catch (err) {
-        next(err);
+
+    if (!transactionData || !transactionTicketsData) {
+        return res.status(400).send({ error: 'Missing transaction data' });
     }
 
-    if(!createdTransaction) {
-        return res.status(500).send({ error: 'Failed to create transaction' });
+    if(!transactionData.paymentTypeId){
+        return res.status(400).send({ error: 'Missing payment type' });
     }
 
-    transactionData.transactionId = createdTransaction.id;
+    let total = 0.0;
+    let approvedTransactionTickets: {}[] = [];
+
     transactionTicketsData.forEach(async (transactionTicketData: any) => {
+
+        if(!transactionTicketData.ticketId || !transactionTicketData.amount){
+            return res.status(400).send({ error: 'Missing ticket data' });
+        }
+
+        let referralUserId = null;
+        let ticketTotal = 0.0;
+
         try {
-            const createdTransactionTicket = await prisma.transactionsTickets.create({
-                data: transactionTicketData,
+            const ticket = await prisma.tickets.findUnique({
+                where: {
+                    id: transactionTicketData.ticketId,
+                    archived: false,
+                },
             });
-            res.send(createdTransactionTicket);
+            if (!ticket) {
+                return res.status(404).send({ error: 'Ticket not found' });
+            }
+            if (ticket.amount < transactionTicketData.amount) {
+                return res.status(400).send({ error: 'Not enough tickets available' });
+            }
+            if (ticket.amount == 0) {
+                return res.status(400).send({ error: 'Ticket sold out' });
+            }
+            if (transactionTicketData.amount < 0) {
+                return res.status(400).send({ error: 'Invalid ticket amount' });
+            }
+            if (transactionTicketData.amount > 10) {
+                return res.status(400).send({ error: 'Maximum ticket amount exceeded' });
+            }
+            if (transactionTicketData.amount > ticket.amount) {
+                return res.status(400).send({ error: 'Not enough tickets available' });
+            }
+
+            let tempTicketPrice = parseFloat(ticket.price.toString());
+            ticketTotal = tempTicketPrice * transactionTicketData.amount;
+
+            let promosDateId = transactionTicketData.promosDateId?.toString() ?? '';
+            let promosReferralId = transactionTicketData.promosReferralId?.toString() ?? '';
+            let referralCode = transactionTicketData.referralCode?.toString() ?? '';
+            let tempUsePoints = transactionTicketData.usePoints ?? false;
+            let discountDate = 0.0;
+            let discountReferral = 0.0;
+            let discountPoints = 0.0;
+
+            if (promosDateId) {
+                try {
+                    const promosDate = await prisma.promosDate.findUnique({
+                        where: {
+                            id: promosDateId,
+                            startDate: {
+                                lte: new Date(),
+                            },
+                            endDate: {
+                                gte: new Date(),
+                            },
+                            archived: false,
+                        },
+                    });
+                    if (promosDate) {
+                        discountDate = tempTicketPrice * (parseFloat(promosDate.discount.toString()) / 100);
+                    } else {
+                        return res.status(404).send({ error: 'Promotion not found' });
+                    }
+
+                } catch (err) {
+                    next(err);
+                }
+            }
+            let referralUser = null;
+
+            if (referralCode) {
+                try {
+                    referralUser = await prisma.users.findUnique({
+                        where: {
+                            referralCode: referralCode,
+                            archived: false,
+                        },
+                    });
+                    if (referralUser) {
+                        referralUserId = referralUser.id;
+                    } else {
+                        return res.status(404).send({ error: 'Referraled user not found' });
+                    }
+                } catch (err) {
+                    next(err);
+                }
+            }
+
+            if (promosReferralId && referralUser) {
+                try {
+                    const promosReferral = await prisma.promosReferral.findUnique({
+                        where: {
+                            id: promosReferralId,
+                            archived: false,
+                        },
+                    });
+                    if (promosReferral) {
+                        discountReferral = tempTicketPrice * (parseFloat(promosReferral.discount.toString()) / 100);
+                    } else {
+                        return res.status(404).send({ error: 'Referal promo not found' });
+                    }
+
+                } catch (err) {
+                    next(err);
+                }
+            }
+
+            if (tempUsePoints === true) {
+                const tempUser = await prisma.users.findUnique({
+                    where: {
+                        id: req.user.id,
+                        archived: false,
+                    },
+                });
+                let point = tempUser?.points ?? null;
+
+                if (point) {
+                    let tempPoint = parseFloat(point.toString());
+                    if (tempPoint >= 0.0) {
+                        discountPoints = tempPoint;
+                    }
+                }
+            }
+            ticketTotal = ticketTotal - discountDate - discountReferral - discountPoints;
+            if (ticketTotal < 0.0) {
+                ticketTotal = 0.0;
+            }
+            transactionTicketData.total = ticketTotal;
+            transactionTicketData.referralCode = referralUserId;
+            approvedTransactionTickets.push(transactionTicketData);
         } catch (err) {
             next(err);
         }
     });
 
-    res.status(201).send(createdTransaction);
+    if (approvedTransactionTickets.length == transactionTicketsData.length) {
+        try {
+            transactionData.userId = req.user.id;
+            const createdTransaction = await prisma.transactions.create({
+                data: transactionData,
+            });
+
+            approvedTransactionTickets.forEach(async (approvedTransactionTicketData: any) => {
+                approvedTransactionTicketData.transactionId = createdTransaction.id;
+                try {
+                    const createdTransactionTicket = await prisma.transactionsTickets.create({
+                        data: approvedTransactionTicketData,
+                    });
+                    total += parseFloat(approvedTransactionTicketData.total.toString());
+
+                    if (approvedTransactionTicketData.referralUserId) {
+                        const updateRefferalUserPoint = await prisma.users.update({
+                            where: {
+                                id: approvedTransactionTicketData.referralCode,
+                            },
+                            data: {
+                                points: {
+                                    increment: 10000,
+                                },
+                            },
+                        });
+                    }
+                } catch (err) {
+                    next(err);
+                }
+            });
+
+            try {
+                const updatedTransaction = await prisma.transactions.update({
+                    where: {
+                        id: createdTransaction.id,
+                    },
+                    data: {
+                        total: total,
+                    },
+                });
+                const paymentTypeId = transactionData.paymentTypeId;
+                if (paymentTypeId == 2 || paymentTypeId == 3 || paymentTypeId == 4) {
+                    const updateTransaction = await prisma.transactions.update({
+                        where: {
+                            id: createdTransaction.id,
+                        },
+                        data: {
+                            status: true,
+                        },
+                    });
+                }
+                res.status(201).send(updatedTransaction);
+            } catch (err) {
+                next(err);
+            }
+
+        } catch (err) {
+            next(err);
+        }
+    } else {
+        return res.status(500).send({ error: 'Error creating Transaction' });
+    }
 });
 
 /**
@@ -185,6 +372,7 @@ userRouter.get('/transactions', authenticateToken, async (req, res, next) => {
 userRouter.get('/transactions/:id', authenticateToken, async (req, res, next) => {
     const transactionId = Number(req.params.id);
     const userId = req.user.id;
+    const referralCode = req.user.referralCode?.toString() ?? '';
     try {
         const transaction = await prisma.transactions.findUnique({
             where: {
