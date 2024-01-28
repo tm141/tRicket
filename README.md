@@ -95,11 +95,7 @@ These scripts read configuration from the corresponding `.env` file in the `dote
 #### Protected: false
 
 - `POST /api/admin/auth/login`: Admin login.
-
-##### Protected for create admin: true
-##### Get Auth: login as admin (/api/admin/auth/login)
-
-- `POST /api/admin/auth/create/admin`: Create a new admin.
+- `POST /api/admin/auth/create/admin`: Create a new admin. //protected: true //getAuth: login as admin(/api/admin/auth/login)
 - `POST /api/admin/auth/logout`: Admin logout.
 
 ### User Auth Routes
@@ -144,8 +140,9 @@ These scripts read configuration from the corresponding `.env` file in the `dote
 #### Protected: true
 #### Get Auth: login as user (/api/user/auth/login)
 
-- `GET /api/user/events`: Retrieve a list of all events.
-- `GET /api/user/events/:id`: Retrieve a specific event by ID.
+
+- `GET /api/user/events`: Retrieve a list of all events. //protected:false
+- `GET /api/user/events/:id`: Retrieve a specific event by ID. //protected:false
 - `POST /api/user/createTransactions`: Create a new transaction.
 - `GET /api/user/transactions`: Retrieve a list of all transactions.
 - `GET /api/user/transactions/:id`: Retrieve a specific transaction by ID.

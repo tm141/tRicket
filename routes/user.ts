@@ -268,7 +268,8 @@ userRouter.post('/createTransactions', authenticateToken, async (req, res, next)
                         data: approvedTransactionTicketData,
                     });
                     total += parseFloat(approvedTransactionTicketData.total.toString());
-
+                    let tempDate = new Date();
+                    tempDate.setMonth(tempDate.getMonth()+8);
                     if (approvedTransactionTicketData.referralUserId) {
                         const updateRefferalUserPoint = await prisma.users.update({
                             where: {
@@ -278,7 +279,7 @@ userRouter.post('/createTransactions', authenticateToken, async (req, res, next)
                                 points: {
                                     increment: 10000,
                                 },
-                                pointsExpDate: dbgenerated("NOW() + interval '3 months'")
+                                pointsExpDate: tempDate,
                             },
                         });
                     }

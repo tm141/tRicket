@@ -7,6 +7,7 @@ import authUserRouter from './routes/authUser';
 import authOrganizerRouter from './routes/authOrganizer';
 import organizerRouter from './routes/organizers';
 import userRouter from './routes/user';
+import cors from 'cors';
 
 const app = express();
 const port = 3000;
@@ -20,6 +21,9 @@ app.get('/', (req: express.Request, res: express.Response) => {
     res.send('Hello World!');
 })
 app.use(express.json());
+app.use(cors({
+    origin: 'http://localhost:3001'
+}));
 
 app.use('/api/admin/users', adminUserRouter);
 app.use('/api/admin/organizers', adminOrganizerRouter);
