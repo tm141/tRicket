@@ -7,6 +7,7 @@ import authUserRouter from './routes/authUser';
 import authOrganizerRouter from './routes/authOrganizer';
 import organizerRouter from './routes/organizers';
 import userRouter from './routes/user';
+import paymentTypeRouter from './routes/paymentTypes';
 import cors from 'cors';
 
 const app = express();
@@ -22,7 +23,8 @@ app.get('/', (req: express.Request, res: express.Response) => {
 })
 app.use(express.json());
 app.use(cors({
-    origin: 'http://localhost:3001'
+    origin: 'http://localhost:3001',
+    credentials: true,
 }));
 
 app.use('/api/admin/users', adminUserRouter);
@@ -35,6 +37,7 @@ app.use('/api/organizer/auth', authOrganizerRouter);
 
 app.use('/api/organizer', organizerRouter);
 app.use('/api/user', userRouter);
+app.use('/api/paymentTypes', paymentTypeRouter);
 
 /**
  * Error handling middleware.

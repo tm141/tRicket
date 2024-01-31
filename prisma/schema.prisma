@@ -22,6 +22,7 @@ model Users {
   points Decimal @default(0)
   pointsExpDate DateTime?
   displayPicture String?
+  registerCoupon Boolean? @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime? @updatedAt
   archived Boolean @default(false)
@@ -142,10 +143,10 @@ model PromosReferral {
 
 model TransactionsTickets {
   id Int @id @default(autoincrement())
-  transaction Transactions @relation(fields: [transactionId], references: [id])
   transactionId Int
-  ticket Tickets @relation(fields: [ticketId], references: [id])
+  transaction Transactions @relation(fields: [transactionId], references: [id])
   ticketId Int
+  ticket Tickets @relation(fields: [ticketId], references: [id])
   amount Int
   promosDate PromosDate? @relation(fields: [promosDateId], references: [id])
   promosDateId Int?

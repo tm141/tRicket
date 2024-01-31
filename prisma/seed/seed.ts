@@ -136,14 +136,14 @@ async function main() {
         const ticketCount = Math.floor(Math.random() * 10) + 1;
         for (let j = 0; j < ticketCount; j++) {
             const eventId = i + 1;
-
+            const randAmount1 = Math.floor(Math.random() * 100) + 1;
             const ticket = await prisma.tickets.create({
                 data: {
                     eventId: eventId,
                     name: "ticketName" + i + j,
                     price: Math.floor(Math.random() * 1000000) + 1,
                     description: "ticketDescription" + i + j,
-                    amount: randAmount,
+                    amount: randAmount1,
                 },
             });
             console.log(ticket);
@@ -233,19 +233,21 @@ async function main() {
     for (let i = 0; i < 100; i++) {
         const randUserId = Math.floor(Math.random() * 50) + 1;
         const randPaymentTypeId = Math.floor(Math.random() * 5) + 1;
-        const randTotalPrice = Math.floor(Math.random() * 1000000) + 1;
+        // const randTotalPrice = Math.floor(Math.random() * 1000000) + 1;
         const randPaymentStatus = Math.random() < 0.5;
 
         const transaction = await prisma.transactions.create({
             data: {
                 userId: randUserId,
                 paymentTypeId: randPaymentTypeId,
-                total: randTotalPrice,
+                // total: randTotalPrice,
+                total:0,
                 status: randPaymentStatus,
             },
         });
         console.log(transaction);
 
+        let tempTransactionTotal = 0;
         //create transaction/ticket
         const randEventAmount = Math.floor(Math.random() * 3) + 1;
         for (let j = 0; j < randEventAmount; j++) {
@@ -266,7 +268,7 @@ async function main() {
                 },
             });
 
-            const randTicketId = Math.floor(Math.random() * tickets.length) + 1;
+            const randTicketId = Math.floor(Math.random() * tickets.length);
             const randTicketAmount = Math.floor(Math.random() * 10) + 1;
             let usePromoDate = false;
             let usePromoReferral = false;
@@ -287,7 +289,8 @@ async function main() {
             const promoDateIdFinal = promoDateId === -1 ? null : promoDateId;
             const promoReferralIdFinal = promoReferralId === -1 ? null : promoReferralId;
 
-            let total = parseFloat(tickets[randTicketId-1].price.toString()) * randTicketAmount;
+
+            let total = parseFloat(tickets[randTicketId].price.toString()) * randTicketAmount;
 
             let promoDateAmount = 0;
             let promoReferralAmount = 0;
@@ -315,12 +318,12 @@ async function main() {
             if (usePromoDate && promoDateIdFinal) promoDateAmount = total * (parseFloat(promoDateDiscount.toString()) / 100);
             if (usePromoReferral && promoReferralIdFinal) promoReferralAmount = total * (parseFloat(promoReferralDiscount.toString())/100);
 
-            total -= promoDateAmount- promoReferralAmount;
+            total = total-promoDateAmount-promoReferralAmount;
 
             const transactionTicket = await prisma.transactionsTickets.create({
                 data: {
                     transactionId: transaction.id,
-                    ticketId: randTicketId,
+                    ticketId: tickets[randTicketId].id,
                     amount: randTicketAmount,
                     promosDateId: promoDateIdFinal,
                     promosReferralId: promoReferralIdFinal,
@@ -328,7 +331,18 @@ async function main() {
                 },
             });
             console.log(transactionTicket);
+            tempTransactionTotal += total;
+            if(tempTransactionTotal<0) tempTransactionTotal=0;
         }
+
+        const updateTransaction = await prisma.transactions.update({
+            where: {
+                id: transaction.id,
+            },
+            data: {
+                total: tempTransactionTotal,
+            },
+        });
     }
 
     //create feedback

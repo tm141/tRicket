@@ -14,7 +14,7 @@ const prisma = new PrismaClient();
  * @returns {Response} The updated organizer object.
  */
 organizersRouter.put('/account', authenticateToken, async (req, res, next) => {
-    if(req.user.isOrganizer === false){
+    if (req.user.isOrganizer === false) {
         return res.status(401).send({ error: 'Unauthorized' });
     }
     const organizerId = Number(req.user.id);
@@ -49,7 +49,7 @@ organizersRouter.put('/account', authenticateToken, async (req, res, next) => {
  * @returns {Response} The organizer object.
  */
 organizersRouter.get('/account', authenticateToken, async (req, res, next) => {
-    if(req.user.isOrganizer === false){
+    if (req.user.isOrganizer === false) {
         return res.status(401).send({ error: 'Unauthorized' });
     }
     const organizerId = Number(req.user.id);
@@ -78,7 +78,7 @@ organizersRouter.get('/account', authenticateToken, async (req, res, next) => {
  * @returns {Response} The list of events.
  */
 organizersRouter.get('/events', authenticateToken, async (req, res, next) => {
-    if(req.user.isOrganizer === false){
+    if (req.user.isOrganizer === false) {
         return res.status(401).send({ error: 'Unauthorized' });
     }
     const organizerId = Number(req.user.id);
@@ -106,12 +106,56 @@ organizersRouter.get('/events', authenticateToken, async (req, res, next) => {
                 isPaidEvent: isPaidEvent,
                 archived: false,
             },
+            include: {
+                organizer: true,
+                tickets: true,
+            },
         });
         res.send(events);
     } catch (err) {
         next(err);
     }
 });
+
+// userRouter.get('/events', async (req, res, next) => {
+//     const name = req.query.searchTerm as string;
+//     const startDate = req.query.startDate&& new Date(req.query.startDate as string);
+//     const endDate = req.query.endDate&& new Date(req.query.endDate as string);
+//     const location = req.query.location as string;
+
+//     const page = Number(req.query.page) || 1;
+//     const limit = Number(req.query.limit) || 10;
+
+//     console.log(req.query);
+//     console.log(name);
+//     console.log(startDate);
+//     try {
+//         const events = await prisma.events.findMany({
+//             where: {
+//                 archived: false,
+//                 name: {
+//                     contains: name,
+//                 },
+//                 location: {
+//                     contains: location,
+//                 },
+//                 showTime: {
+//                     gte: startDate,
+//                     lte: endDate,
+//                 },
+//             },
+//             include: {
+//                 organizer: true,
+//                 tickets: true,
+//             },
+//             skip: (page - 1) * limit,
+//             take: limit,
+//         });
+//         res.send(events);
+//     } catch (err) {
+//         next(err);
+//     }
+// });
 
 /**
  * Get the details of a specific event organized by the authenticated organizer.
@@ -122,7 +166,7 @@ organizersRouter.get('/events', authenticateToken, async (req, res, next) => {
  * @returns {Response} The event object.
  */
 organizersRouter.get('/events/:id', authenticateToken, async (req, res, next) => {
-    if(req.user.isOrganizer === false){
+    if (req.user.isOrganizer === false) {
         return res.status(401).send({ error: 'Unauthorized' });
     }
     const organizerId = Number(req.user.id);
@@ -132,6 +176,10 @@ organizersRouter.get('/events/:id', authenticateToken, async (req, res, next) =>
             where: {
                 id: eventId,
             },
+            include: {
+                organizer: true,
+                tickets: true,
+            }
         });
         if (!event) {
             return res.status(404).send({ error: 'Event not found' });
@@ -154,7 +202,7 @@ organizersRouter.get('/events/:id', authenticateToken, async (req, res, next) =>
  * @returns {Response} The created event object.
  */
 organizersRouter.post('/events', authenticateToken, async (req, res, next) => {
-    if(req.user.isOrganizer === false){
+    if (req.user.isOrganizer === false) {
         return res.status(401).send({ error: 'Unauthorized' });
     }
     const organizerId = Number(req.user.id);
@@ -181,7 +229,7 @@ organizersRouter.post('/events', authenticateToken, async (req, res, next) => {
  * @returns {Response} The updated event object.
  */
 organizersRouter.put('/events/:id', authenticateToken, async (req, res, next) => {
-    if(req.user.isOrganizer === false){
+    if (req.user.isOrganizer === false) {
         return res.status(401).send({ error: 'Unauthorized' });
     }
     const organizerId = Number(req.user.id);
@@ -221,7 +269,7 @@ organizersRouter.put('/events/:id', authenticateToken, async (req, res, next) =>
  * @returns {Response} The deleted event object.
  */
 organizersRouter.delete('/events/:id', authenticateToken, async (req, res, next) => {
-    if(req.user.isOrganizer === false){
+    if (req.user.isOrganizer === false) {
         return res.status(401).send({ error: 'Unauthorized' });
     }
     const organizerId = Number(req.user.id);
@@ -262,7 +310,7 @@ organizersRouter.delete('/events/:id', authenticateToken, async (req, res, next)
  * @returns {Response} The list of tickets.
  */
 organizersRouter.get('/events/:id/tickets', authenticateToken, async (req, res, next) => {
-    if(req.user.isOrganizer === false){
+    if (req.user.isOrganizer === false) {
         return res.status(401).send({ error: 'Unauthorized' });
     }
     const organizerId = Number(req.user.id);
@@ -307,7 +355,7 @@ organizersRouter.get('/events/:id/tickets', authenticateToken, async (req, res, 
  * @returns {Response} The ticket object.
  */
 organizersRouter.get('/events/:id/tickets/:ticketId', authenticateToken, async (req, res, next) => {
-    if(req.user.isOrganizer === false){
+    if (req.user.isOrganizer === false) {
         return res.status(401).send({ error: 'Unauthorized' });
     }
     const organizerId = Number(req.user.id);
@@ -350,7 +398,7 @@ organizersRouter.get('/events/:id/tickets/:ticketId', authenticateToken, async (
  * @returns {Response} The created ticket object.
  */
 organizersRouter.post('/events/:id/tickets', authenticateToken, async (req, res, next) => {
-    if(req.user.isOrganizer === false){
+    if (req.user.isOrganizer === false) {
         return res.status(401).send({ error: 'Unauthorized' });
     }
     const organizerId = Number(req.user.id);
@@ -366,7 +414,7 @@ organizersRouter.post('/events/:id/tickets', authenticateToken, async (req, res,
         if (!event || event.archived) {
             return res.status(404).send({ error: 'Event not found' });
         }
-        if (event.showTime < new Date()){
+        if (event.showTime < new Date()) {
             return res.status(400).send({ error: 'Event has passed' });
         }
         if (event.organizersId !== organizerId) {
@@ -390,7 +438,7 @@ organizersRouter.post('/events/:id/tickets', authenticateToken, async (req, res,
  * @returns {Response} The updated ticket object.
  */
 organizersRouter.put('/events/:id/tickets/:ticketId', authenticateToken, async (req, res, next) => {
-    if(req.user.isOrganizer === false){
+    if (req.user.isOrganizer === false) {
         return res.status(401).send({ error: 'Unauthorized' });
     }
     const organizerId = Number(req.user.id);
@@ -438,7 +486,7 @@ organizersRouter.put('/events/:id/tickets/:ticketId', authenticateToken, async (
  * @returns {Response} The deleted ticket object.
  */
 organizersRouter.delete('/events/:id/tickets/:ticketId', authenticateToken, async (req, res, next) => {
-    if(req.user.isOrganizer === false){
+    if (req.user.isOrganizer === false) {
         return res.status(401).send({ error: 'Unauthorized' });
     }
     const organizerId = Number(req.user.id);
@@ -479,7 +527,7 @@ organizersRouter.delete('/events/:id/tickets/:ticketId', authenticateToken, asyn
 });
 
 /**
- * Get a list of attendees for a specific event organized by the authenticated organizer.
+ * Get a count of how many tickets are sold and the total for a specific event organized by the authenticated organizer.
  * @route GET /events/:id/attendees
  * @param {Request} req - The request object.
  * @param {Request} req.query.fName - The first name of the attendee.
@@ -491,16 +539,14 @@ organizersRouter.delete('/events/:id/tickets/:ticketId', authenticateToken, asyn
  * @param {Request} req.query.limit - The number of items per page.
  * @param {Response} res - The response object.
  * @param {NextFunction} next - The next middleware function. 
- * @returns {Response} The list of attendees.
+ * @returns {Response} The list of attendees amount and the total of each transaction total.
  */
-organizersRouter.get('/events/:id/attendees', authenticateToken, async (req, res, next) => {
-    if(req.user.isOrganizer === false){
+organizersRouter.get('/events/:id/detail', authenticateToken, async (req, res, next) => {
+    if (req.user.isOrganizer === false) {
         return res.status(401).send({ error: 'Unauthorized' });
     }
     const organizerId = Number(req.user.id);
     const eventId = Number(req.params.id);
-    const page = Number(req.query.page) || 1;
-    const limit = Number(req.query.limit) || 10;
 
     try {
         const event = await prisma.events.findUnique({
@@ -527,40 +573,24 @@ organizersRouter.get('/events/:id/attendees', authenticateToken, async (req, res
                 },
             },
         });
-        const transactions = await prisma.transactions.findMany({
-            where: {
-                id: {
-                    in: transactionsTickets.map((transactionTicket) => transactionTicket.transactionId),
-                },
-            },
+        let attendeeCount = 0;
+        let total=0.0;
+        
+        transactionsTickets.forEach((transactionTicket) => {
+            attendeeCount += transactionTicket.amount;
+            total+= parseFloat(transactionTicket.total.toString());
         });
 
+        let result = {
+            attendeeCount: attendeeCount,
+            total: total,
+            transactionsTickets: transactionsTickets,
+        };
 
-        const fName = req.query.fName as string | undefined;
-        const lName = req.query.lName as string | undefined;
-        const email = req.query.email as string | undefined;
-        const phone = req.query.phone as string | undefined;
-        const address = req.query.address as string | undefined;
-
-        const attendees = await prisma.users.findMany({
-            skip: (page - 1) * limit,
-            take: limit,
-            where: {
-                id: {
-                    in: transactions.map((transaction) => transaction.userId),
-                },
-                fName: fName ? { contains: fName } : undefined,
-                lName: lName ? { contains: lName } : undefined,
-                email: email ? { contains: email } : undefined,
-                phone: phone ? { contains: phone } : undefined,
-                address: address ? { contains: address } : undefined,
-                archived: false,
-            },
-        });
-
-        res.send(attendees);
+        res.send(result);
     } catch (err) {
-        next(err);
+        console.log(err);
+        // next(err);
     }
 });
 
@@ -578,7 +608,7 @@ organizersRouter.get('/events/:id/attendees', authenticateToken, async (req, res
  * @returns {Response} The list of transactions.
  */
 organizersRouter.get('/events/:id/transactions', authenticateToken, async (req, res, next) => {
-    if(req.user.isOrganizer === false){
+    if (req.user.isOrganizer === false) {
         return res.status(401).send({ error: 'Unauthorized' });
     }
     const organizerId = Number(req.user.id);
@@ -644,7 +674,7 @@ organizersRouter.get('/events/:id/transactions', authenticateToken, async (req, 
  * @returns {Response} The transaction object.
  */
 organizersRouter.get('/events/:id/transactions/:transactionId', authenticateToken, async (req, res, next) => {
-    if(req.user.isOrganizer === false){
+    if (req.user.isOrganizer === false) {
         return res.status(401).send({ error: 'Unauthorized' });
     }
     const organizerId = Number(req.user.id);

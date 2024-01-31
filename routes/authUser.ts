@@ -17,7 +17,7 @@ const prisma = new PrismaClient();
  * @returns {Object} - Response object containing the JWT token
  */
 userAuthRouter.post('/login', async (req, res, next) => {
-    const {loginEmail, password} = req.body;
+    const { loginEmail, password } = req.body;
     try {
         const user = await prisma.users.findUnique({
             where: {
@@ -31,9 +31,8 @@ userAuthRouter.post('/login', async (req, res, next) => {
         if (!validPassword) {
             return res.status(400).send({ error: 'Invalid email or password' });
         }
-        const userJWT = { id: user.id, name:user.fName, email:user.email, roleId: "1" };
-        const token = jwt.sign({"userJWT": userJWT}, process.env.JWT_SECRET as string, {expiresIn: '1d'});
-        res.send({token});
+        const token = jwt.sign({ id: user.id, name: user.fName, email: user.email, roleId: "1" }, process.env.JWT_SECRET as string, { expiresIn: '1d' });
+        res.send({ token });
     } catch (err) {
         next(err);
     }
@@ -54,6 +53,24 @@ userAuthRouter.post('/register', async (req, res, next) => {
     let tempfName = userData.fName ?? '';
     let loginEmail = userData.email ?? '';
     let referralCode = '';
+
+    let userIdRecieverReferralCode = -1;
+
+    let recieverReferralCode = userData.referralCode ?? '';
+
+    try {
+        const reciever = await prisma.users.findUnique({
+            where: {
+                referralCode: recieverReferralCode,
+            },
+        });
+        if (reciever) {
+            userIdRecieverReferralCode = reciever.id;
+        }
+    } catch (err) {
+        next(err);
+    }
+
     if (tempfName && loginEmail) {
         referralCode = Buffer.from(tempfName + loginEmail).toString('base64');
     }
@@ -63,6 +80,20 @@ userAuthRouter.post('/register', async (req, res, next) => {
     const hashedPassword = await bcrypt.hash(userData.password, saltRounds);
     userData.password = hashedPassword;
     try {
+        if (userIdRecieverReferralCode>-1) {
+            userData.registerCoupon = true;
+            const updateUserPoint = await prisma.users.update({
+                where: {
+                    id: userIdRecieverReferralCode,
+                },
+                data: {
+                    points: {
+                        increment: 10000,
+                    },
+                },
+            });
+        }
+        
         const createdUser = await prisma.users.create({
             data: userData,
         });
